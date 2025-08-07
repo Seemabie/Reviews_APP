@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for mobile-friendly design
+# Custom CSS for mobile-friendly design with HUGE buttons
 st.markdown("""
 <style>
     .main > div {
@@ -19,24 +19,25 @@ st.markdown("""
     }
     
     .stButton > button {
-        width: 100%;
-        height: 80px;
-        font-size: 3rem;
-        border: none;
-        border-radius: 50%;
-        margin: 5px;
-        cursor: pointer;
+        width: 100% !important;
+        height: 140px !important;
+        font-size: 4.5rem !important;
+        border: 3px solid #ddd !important;
+        border-radius: 20px !important;
+        margin: 15px 0 !important;
+        cursor: pointer !important;
+        background: white !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
-    .emoji-button {
-        width: 100%;
-        height: 80px;
-        font-size: 3rem;
-        border: 3px solid transparent;
-        border-radius: 50%;
-        margin: 10px 5px;
-        cursor: pointer;
-        transition: all 0.3s ease;
+    .stButton > button:hover {
+        transform: scale(1.02) !important;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+        border-color: #4CAF50 !important;
     }
     
     .title {
@@ -49,17 +50,9 @@ st.markdown("""
     
     .subtitle {
         text-align: center;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         margin-bottom: 2rem;
         color: #666;
-    }
-    
-    .rating-container {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        margin: 2rem 0;
-        flex-wrap: wrap;
     }
     
     .thank-you {
@@ -78,22 +71,25 @@ st.markdown("""
         .title {
             font-size: 2rem;
         }
-        .emoji-button {
-            width: 60px;
-            height: 60px;
-            font-size: 2rem;
+        .subtitle {
+            font-size: 1.1rem;
+        }
+        .stButton > button {
+            height: 120px !important;
+            font-size: 3.5rem !important;
+            margin: 10px 0 !important;
         }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'rating_selected' not in st.session_state:
-    st.session_state.rating_selected = None
-if 'review_submitted' not in st.session_state:
-    st.session_state.review_submitted = False
 if 'show_thank_you' not in st.session_state:
     st.session_state.show_thank_you = False
+if 'show_comment_option' not in st.session_state:
+    st.session_state.show_comment_option = False
+if 'current_rating' not in st.session_state:
+    st.session_state.current_rating = None
 
 def save_review(rating, comment=""):
     """Save review to CSV file"""
@@ -117,79 +113,115 @@ def save_review(rating, comment=""):
 
 def reset_form():
     """Reset the form after submission"""
-    st.session_state.rating_selected = None
-    st.session_state.review_submitted = False
     st.session_state.show_thank_you = False
+    st.session_state.show_comment_option = False
+    st.session_state.current_rating = None
 
 # Main app
 def main():
     # Title
     st.markdown('<div class="title">🏪 Kirmani\'s Store Reviews</div>', unsafe_allow_html=True)
     
-    if not st.session_state.show_thank_you:
-        st.markdown('<div class="subtitle">How was your experience with us today?</div>', unsafe_allow_html=True)
+    emojis = ["😞", "😟", "😐", "😊", "😄"]
+    labels = ["Very Poor", "Poor", "Average", "Good", "Excellent"]
+    
+    # Main rating screen - NO comment section here
+    if not st.session_state.show_thank_you and not st.session_state.show_comment_option:
+        st.markdown('<div class="subtitle">Tap to rate your experience with us today!</div>', unsafe_allow_html=True)
         
-        # Rating selection with emojis
-        st.markdown("### Rate Your Experience:")
+        # BIG emoji buttons - each submits immediately
+        # Order: Best to worst for better UX
+        if st.button("😄 Excellent", key="rating_5"):
+            save_review(5)
+            st.session_state.current_rating = 5
+            st.session_state.show_thank_you = True
+            st.rerun()
+            
+        if st.button("😊 Good", key="rating_4"):
+            save_review(4)
+            st.session_state.current_rating = 4
+            st.session_state.show_thank_you = True
+            st.rerun()
+            
+        if st.button("😐 Average", key="rating_3"):
+            save_review(3)
+            st.session_state.current_rating = 3
+            st.session_state.show_thank_you = True
+            st.rerun()
+            
+        if st.button("😟 Poor", key="rating_2"):
+            save_review(2)
+            st.session_state.current_rating = 2
+            st.session_state.show_thank_you = True
+            st.rerun()
+            
+        if st.button("😞 Very Poor", key="rating_1"):
+            save_review(1)
+            st.session_state.current_rating = 1
+            st.session_state.show_thank_you = True
+            st.rerun()
+    
+    # Comment page (optional)
+    elif st.session_state.show_comment_option:
+        st.markdown('<div class="subtitle">Want to tell us more?</div>', unsafe_allow_html=True)
         
-        # Create columns for emoji buttons
-        cols = st.columns(5)
-        
-        emojis = ["😞", "😟", "😐", "😊", "😄"]
-        ratings = [1, 2, 3, 4, 5]
-        colors = ["#E53E3E", "#FF8C00", "#FFD700", "#9AE6B4", "#68D391"]
-        labels = ["Very Poor", "Poor", "Average", "Good", "Excellent"]
-        
-        for i, (col, emoji, rating, color, label) in enumerate(zip(cols, emojis, ratings, colors, labels)):
-            with col:
-                if st.button(emoji, key=f"rating_{rating}", help=label):
-                    st.session_state.rating_selected = rating
-        
-        # Show selected rating
-        if st.session_state.rating_selected:
-            selected_idx = st.session_state.rating_selected - 1
+        # Show their rating
+        if st.session_state.current_rating:
+            selected_idx = st.session_state.current_rating - 1
             st.markdown(f"""
-            <div style="text-align: center; margin: 1rem 0; font-size: 1.2rem;">
-                You selected: {emojis[selected_idx]} {labels[selected_idx]}
+            <div style="text-align: center; margin: 1rem 0; font-size: 1.8rem;">
+                Your rating: {emojis[selected_idx]} {labels[selected_idx]}
             </div>
             """, unsafe_allow_html=True)
         
-        # Optional comment section
-        st.markdown("### Additional Comments (Optional):")
-        comment = st.text_area("Tell us more about your experience...", height=100, placeholder="Your feedback helps us improve!")
+        # Comment section
+        st.markdown("### Tell us more:")
+        comment = st.text_area("What made your experience special?", height=120, 
+                              placeholder="Your detailed feedback helps us improve!")
         
-        # Submit button
-        col1, col2, col3 = st.columns([1, 2, 1])
+        # Action buttons
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⏭️ Skip", type="secondary"):
+                reset_form()
+                st.rerun()
         with col2:
-            if st.button("Submit Review", type="primary", disabled=st.session_state.rating_selected is None):
-                if st.session_state.rating_selected:
-                    save_review(st.session_state.rating_selected, comment)
-                    st.session_state.show_thank_you = True
-                    st.rerun()
-    
-    else:
-        # Thank you message
-        st.markdown("""
-        <div class="thank-you">
-            <h2>🙏 Thank You!</h2>
-            <p>Your feedback has been recorded.</p>
-            <p>We appreciate you taking the time to share your experience!</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # New review button
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button("Submit Another Review", type="primary"):
+            if st.button("✅ Submit Comment", type="primary"):
+                if comment.strip():
+                    # Update the existing review with the comment
+                    filename = "reviews.csv"
+                    if os.path.exists(filename):
+                        df = pd.read_csv(filename)
+                        # Update the last row with the comment
+                        if len(df) > 0:
+                            df.iloc[-1, df.columns.get_loc('comment')] = comment.strip()
+                            df.to_csv(filename, index=False)
                 reset_form()
                 st.rerun()
     
-    # Footer
-    st.markdown("---")
-    st.markdown(
-        '<div style="text-align: center; color: #888; font-size: 0.9rem;">Powered by Streamlit</div>', 
-        unsafe_allow_html=True
-    )
+    # Thank you screen
+    else:
+        selected_idx = (st.session_state.current_rating - 1) if st.session_state.current_rating else 0
+        st.markdown(f"""
+        <div class="thank-you">
+            <h1>🙏 Thank You!</h1>
+            <h2>You rated us: {emojis[selected_idx]} {labels[selected_idx]}</h2>
+            <p>Your feedback helps us serve you better!</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Options
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📝 Add Comment", type="secondary"):
+                st.session_state.show_comment_option = True
+                st.session_state.show_thank_you = False
+                st.rerun()
+        
+        with col2:
+            if st.button("✅ All Done", type="primary"):
+                reset_form()
+                st.rerun()
 
 if __name__ == "__main__":
     main()
